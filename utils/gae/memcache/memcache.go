@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/soundtrackyourbrand/utils"
+	"github.com/zond/sybutils/utils"
 
 	"appengine"
 	"appengine/delay"
@@ -34,7 +34,7 @@ const (
 var Codec = memcache.Gob
 var ErrCacheMiss = memcache.ErrCacheMiss
 
-var deleteFunc = delay.Func("github.com/soundtrackyourbrand/utils/gae/memcache.delayedDelete", delayedDelete)
+var deleteFunc = delay.Func("github.com/zond/sybutils/utils/gae/memcache.delayedDelete", delayedDelete)
 
 func delayedDelete(c appengine.Context, keys []string) (err error) {
 	return del(c, keys...)

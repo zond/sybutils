@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/soundtrackyourbrand/utils"
-	"github.com/soundtrackyourbrand/utils/json"
+	"github.com/zond/sybutils/utils"
+	"github.com/zond/sybutils/utils/json"
 
 	gbigquery "code.google.com/p/google-api-go-client/bigquery/v2"
 	"code.google.com/p/google-api-go-client/googleapi"

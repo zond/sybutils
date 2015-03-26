@@ -26,11 +26,11 @@ import (
 	"time"
 
 	"github.com/kr/pretty"
-	"github.com/soundtrackyourbrand/utils/json"
+	"github.com/zond/sybutils/utils/json"
 
 	"net/http"
 
-	"github.com/soundtrackyourbrand/utils/run"
+	"github.com/zond/sybutils/utils/run"
 )
 
 func init() {

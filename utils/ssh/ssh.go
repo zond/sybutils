@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/soundtrackyourbrand/ssh"
-	utilsRun "github.com/soundtrackyourbrand/utils/run"
+	utilsRun "github.com/zond/sybutils/utils/run"
 )
 
 func ParseCreds(user string, b []byte) (result Creds, err error) {

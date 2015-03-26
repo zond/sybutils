@@ -12,7 +12,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/soundtrackyourbrand/utils/json"
+	"github.com/zond/sybutils/utils/json"
 )
 
 func ExampleMarshal() {

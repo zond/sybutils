@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/soundtrackyourbrand/utils"
+	"github.com/zond/sybutils/utils"
 )
 
 const (

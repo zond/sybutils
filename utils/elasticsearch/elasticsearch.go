@@ -9,10 +9,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/soundtrackyourbrand/utils/json"
+	"github.com/zond/sybutils/utils/json"
 
-	"github.com/soundtrackyourbrand/utils"
-	"github.com/soundtrackyourbrand/utils/key"
+	"github.com/zond/sybutils/utils"
+	"github.com/zond/sybutils/utils/key"
 )
 
 type ElasticConnector interface {

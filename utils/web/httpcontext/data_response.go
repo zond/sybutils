@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/soundtrackyourbrand/utils/json"
+	"github.com/zond/sybutils/utils/json"
 )
 
 const (

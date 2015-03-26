@@ -3,8 +3,8 @@ package mutex
 import (
 	"appengine/datastore"
 	"fmt"
-	"github.com/soundtrackyourbrand/utils/gae/gaecontext"
-	"github.com/soundtrackyourbrand/utils/gae/memcache"
+	"github.com/zond/sybutils/utils/gae/gaecontext"
+	"github.com/zond/sybutils/utils/gae/memcache"
 	"time"
 )
 
@@ -13,11 +13,11 @@ const (
 )
 
 func lockKeyForName(name string) string {
-	return fmt.Sprintf("github.com/soundtrackyourbrand/utils/gae/mutex.Mutex{Name:%v}", name)
+	return fmt.Sprintf("github.com/zond/sybutils/utils/gae/mutex.Mutex{Name:%v}", name)
 }
 
 func lockIdForName(c gaecontext.GAEContext, name string) *datastore.Key {
-	return datastore.NewKey(c, "github.com/soundtrackyourbrand/utils/gae/mutex.Mutex{Name:%v}", name, 0, nil)
+	return datastore.NewKey(c, "github.com/zond/sybutils/utils/gae/mutex.Mutex{Name:%v}", name, 0, nil)
 }
 
 type Mutex struct {

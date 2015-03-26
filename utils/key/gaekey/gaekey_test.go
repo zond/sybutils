@@ -2,7 +2,7 @@ package gaekey
 
 import (
 	"appengine_internal"
-	"github.com/soundtrackyourbrand/utils/key"
+	"github.com/zond/sybutils/utils/key"
 	"math/rand"
 	"reflect"
 	"testing"

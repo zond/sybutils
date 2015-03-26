@@ -1,7 +1,7 @@
 package email
 
 import (
-	"github.com/soundtrackyourbrand/utils/key"
+	"github.com/zond/sybutils/utils/key"
 )
 
 type Attachment struct {

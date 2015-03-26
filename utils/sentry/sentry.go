@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/soundtrackyourbrand/utils"
+	"github.com/zond/sybutils/utils"
 
 	"bytes"
 	"encoding/json"

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/soundtrackyourbrand/utils"
-	"github.com/soundtrackyourbrand/utils/gae/memcache"
-	"github.com/soundtrackyourbrand/utils/key"
-	"github.com/soundtrackyourbrand/utils/key/gaekey"
+	"github.com/zond/sybutils/utils"
+	"github.com/zond/sybutils/utils/gae/memcache"
+	"github.com/zond/sybutils/utils/key"
+	"github.com/zond/sybutils/utils/key/gaekey"
 
 	"appengine"
 	"appengine/datastore"

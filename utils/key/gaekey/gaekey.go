@@ -1,7 +1,7 @@
 package gaekey
 
 import (
-	"github.com/soundtrackyourbrand/utils/key"
+	"github.com/zond/sybutils/utils/key"
 
 	"appengine"
 	"appengine/datastore"
