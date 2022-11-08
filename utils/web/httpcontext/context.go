@@ -227,12 +227,6 @@ func (self *DefaultHTTPContext) CheckScopes(allowedScopes []string) (err error) 
 }
 
 func Handle(c HTTPContext, f func() error, scopes ...string) {
-	defer func() {
-		if e := recover(); e != nil {
-			log.Printf("PANIC\n%v\nRequest: %+v\nStack: %s", e, c.Req(), utils.Stack())
-			panic(e)
-		}
-	}()
 	err := c.CheckScopes(scopes)
 	if err == nil {
 		err = f()
