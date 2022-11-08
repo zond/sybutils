@@ -12,10 +12,10 @@ import (
 
 	"github.com/zond/sybutils/utils"
 
-	"appengine"
-	"appengine/delay"
-	"appengine/memcache"
-	"appengine/taskqueue"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/delay"
+	"google.golang.org/appengine/memcache"
+	"google.golang.org/appengine/taskqueue"
 )
 
 var MemcacheEnabled = true

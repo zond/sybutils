@@ -3,8 +3,8 @@ package gaekey
 import (
 	"github.com/zond/sybutils/utils/key"
 
-	"appengine"
-	"appengine/datastore"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
 )
 
 func FromGAErr(k *datastore.Key, err error) (result key.Key, err2 error) {

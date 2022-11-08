@@ -14,9 +14,9 @@ import (
 	"github.com/zond/sybutils/utils/key/gaekey"
 	"github.com/zond/sybutils/utils/web/httpcontext"
 
-	"appengine"
-	"appengine/datastore"
-	"appengine/log"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/log"
 )
 
 const (

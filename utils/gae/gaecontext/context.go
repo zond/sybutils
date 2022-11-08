@@ -16,9 +16,9 @@ import (
 
 	"strings"
 
-	"appengine"
-	"appengine/datastore"
-	"appengine/urlfetch"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/urlfetch"
 )
 
 func KindsRenderer(c JSONContext) (status int, result []string, err error) {

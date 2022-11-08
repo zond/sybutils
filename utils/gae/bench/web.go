@@ -1,16 +1,17 @@
 package web
 
 import (
-	"appengine/datastore"
 	"fmt"
-	"github.com/zond/sybutils/utils/gae/gaecontext"
-	"github.com/zond/sybutils/utils/gae/key"
-	"github.com/zond/sybutils/utils/gae/memcache"
-	"github.com/zond/sybutils/utils/web/jsoncontext"
 	"net/http"
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/zond/sybutils/utils/gae/gaecontext"
+	"github.com/zond/sybutils/utils/gae/key"
+	"github.com/zond/sybutils/utils/gae/memcache"
+	"github.com/zond/sybutils/utils/web/jsoncontext"
+	"google.golang.org/appengine/datastore"
 )
 
 type Bench struct {
