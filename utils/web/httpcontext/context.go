@@ -2,11 +2,8 @@ package httpcontext
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"log/syslog"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -67,7 +64,7 @@ func NewError(status int, body interface{}, info string, cause error) (result HT
 	return
 }
 
-func (self HTTPError) Respond(c HTTPContextLogger) (err error) {
+func (self HTTPError) Respond(c HTTPContext) (err error) {
 	if self.Status != 0 {
 		c.Resp().WriteHeader(self.Status)
 	}
@@ -82,15 +79,7 @@ func (self HTTPError) Error() string {
 }
 
 type Responder interface {
-	Respond(c HTTPContextLogger) error
-}
-
-type Logger interface {
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warningf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Criticalf(format string, args ...interface{})
+	Respond(c HTTPContext) error
 }
 
 type MemorableResponseWriter interface {
@@ -137,101 +126,18 @@ type HTTPContext interface {
 	Req() *http.Request
 	Resp() MemorableResponseWriter
 	MostAccepted(name, def string) string
-	SetLogger(Logger)
 	AccessToken(dst utils.AccessToken) (utils.AccessToken, error)
 	CheckScopes([]string) error
 }
 
-type HTTPContextLogger interface {
-	HTTPContext
-	Logger
-}
-
-type DefaultLogger struct {
-	DebugLogger    *log.Logger
-	InfoLogger     *log.Logger
-	WarningLogger  *log.Logger
-	ErrorLogger    *log.Logger
-	CriticalLogger *log.Logger
-}
-
 type DefaultHTTPContext struct {
-	Logger
 	response MemorableResponseWriter
 	request  *http.Request
 	vars     map[string]string
 }
 
-var defaultLogger = NewSTDOUTLogger(4)
-
-func NewDefaultLogger(w io.Writer, level int) (result *DefaultLogger) {
-	result = &DefaultLogger{}
-	result.CriticalLogger = log.New(w, "CRITICAL: ", 0)
-	if level > 0 {
-		result.ErrorLogger = log.New(w, "ERROR: ", 0)
-	}
-	if level > 1 {
-		result.WarningLogger = log.New(w, "WARNING: ", 0)
-	}
-	if level > 2 {
-		result.InfoLogger = log.New(w, "INFO: ", 0)
-	}
-	if level > 3 {
-		result.DebugLogger = log.New(w, "DEBUG: ", 0)
-	}
-	return
-}
-
-func NewSTDOUTLogger(level int) (result *DefaultLogger) {
-	return NewDefaultLogger(os.Stdout, level)
-}
-
-func NewSysLogger(level int) (result *DefaultLogger, err error) {
-	result = &DefaultLogger{}
-	priorities := []syslog.Priority{syslog.LOG_CRIT, syslog.LOG_ERR, syslog.LOG_WARNING, syslog.LOG_INFO, syslog.LOG_DEBUG}
-	loggers := []**log.Logger{&result.CriticalLogger, &result.ErrorLogger, &result.WarningLogger, &result.InfoLogger, &result.DebugLogger}
-	for index, logger := range loggers {
-		if level >= index {
-			*logger, err = syslog.NewLogger(priorities[index], 0)
-			if err != nil {
-				return
-			}
-		}
-	}
-	return
-}
-
-func (self *DefaultLogger) Debugf(format string, i ...interface{}) {
-	if self.DebugLogger != nil {
-		self.DebugLogger.Printf(format, i...)
-	}
-}
-
-func (self *DefaultLogger) Infof(format string, i ...interface{}) {
-	if self.InfoLogger != nil {
-		self.InfoLogger.Printf(format, i...)
-	}
-}
-
-func (self *DefaultLogger) Warningf(format string, i ...interface{}) {
-	if self.WarningLogger != nil {
-		self.WarningLogger.Printf(format, i...)
-	}
-}
-
-func (self *DefaultLogger) Errorf(format string, i ...interface{}) {
-	if self.ErrorLogger != nil {
-		self.ErrorLogger.Printf(format, i...)
-	}
-}
-
-func (self *DefaultLogger) Criticalf(format string, i ...interface{}) {
-	self.CriticalLogger.Printf(format, i...)
-}
-
 func NewHTTPContext(w http.ResponseWriter, r *http.Request) (result *DefaultHTTPContext) {
 	result = &DefaultHTTPContext{
-		Logger: defaultLogger,
 		response: &DefaultMemorableResponseWriter{
 			ResponseWriter: w,
 			startedAt:      time.Now(),
@@ -289,10 +195,6 @@ func (self *DefaultHTTPContext) MostAccepted(name, def string) string {
 	return MostAccepted(self.Req(), name, def)
 }
 
-func (self *DefaultHTTPContext) SetLogger(l Logger) {
-	self.Logger = l
-}
-
 func (self *DefaultHTTPContext) Req() *http.Request {
 	return self.request
 }
@@ -324,10 +226,10 @@ func (self *DefaultHTTPContext) CheckScopes(allowedScopes []string) (err error) 
 	return NewError(401, "Unauthorized", fmt.Sprintf("Requires one of %+v, but got %+v", allowedScopes, token.Scopes()), nil)
 }
 
-func Handle(c HTTPContextLogger, f func() error, scopes ...string) {
+func Handle(c HTTPContext, f func() error, scopes ...string) {
 	defer func() {
 		if e := recover(); e != nil {
-			c.Errorf("PANIC\n%v\nRequest: %+v\nStack: %s", e, c.Req(), utils.Stack())
+			log.Printf("PANIC\n%v\nRequest: %+v\nStack: %s", e, c.Req(), utils.Stack())
 			panic(e)
 		}
 	}()
@@ -346,17 +248,17 @@ func Handle(c HTTPContextLogger, f func() error, scopes ...string) {
 			fmt.Fprintf(c.Resp(), "%v", err)
 		}
 		if c.Resp().Status() >= 500 {
-			c.Errorf("%v\n%v\n\n", c.Req().URL, err)
+			log.Printf("%v\n%v\n\n", c.Req().URL, err)
 		} else {
-			c.Warningf("%v\n%v\n\n", c.Req().URL, err)
+			log.Printf("%v\n%v\n\n", c.Req().URL, err)
 		}
 		if stacker, ok := err.(utils.StackError); ok {
-			c.Infof("%s", string(stacker.GetStack()))
+			log.Printf("%s", string(stacker.GetStack()))
 		}
 	}
 }
 
-func HandlerFunc(f func(c HTTPContextLogger) error, scopes ...string) http.Handler {
+func HandlerFunc(f func(c HTTPContext) error, scopes ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c := NewHTTPContext(w, r)
 		Handle(c, func() error {

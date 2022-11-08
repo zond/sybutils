@@ -1,7 +1,9 @@
 package gaecontext
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"reflect"
@@ -117,7 +119,7 @@ func CallTransactionFunction(c GAEContext, f interface{}) (err error) {
 }
 
 type DefaultContext struct {
-	appengine.Context
+	context.Context
 	allowHTTPDuringTransactions bool
 	inTransaction               bool
 	afterTransaction            []func(GAEContext) error
@@ -189,7 +191,7 @@ func (self *DefaultContext) BeforeUpdate(i interface{}) error { return nil }
 
 func (self *DefaultContext) Debugf(format string, i ...interface{}) {
 	for _, m := range self.split(format, i...) {
-		self.Context.Debugf("%v", m)
+		log.Printf("%v", m)
 	}
 }
 
@@ -208,25 +210,25 @@ func (self *DefaultContext) split(format string, i ...interface{}) (result []str
 
 func (self *DefaultContext) Infof(format string, i ...interface{}) {
 	for _, m := range self.split(format, i...) {
-		self.Context.Infof("%v", m)
+		log.Printf("%v", m)
 	}
 }
 
 func (self *DefaultContext) Warningf(format string, i ...interface{}) {
 	for _, m := range self.split(format, i...) {
-		self.Context.Warningf("%v", m)
+		log.Printf("%v", m)
 	}
 }
 
 func (self *DefaultContext) Errorf(format string, i ...interface{}) {
 	for _, m := range self.split(format, i...) {
-		self.Context.Errorf("%v", m)
+		log.Printf("%v", m)
 	}
 }
 
 func (self *DefaultContext) Criticalf(format string, i ...interface{}) {
 	for _, m := range self.split(format, i...) {
-		self.Context.Criticalf("%v", m)
+		log.Printf("%v", m)
 	}
 }
 
@@ -252,13 +254,13 @@ func (t *Transport) RoundTrip(req *http.Request) (res *http.Response, err error)
 	curly := utils.ToCurl(req)
 	resp, err := t.T.RoundTrip(req)
 	if err != nil {
-		t.T.Context.Warningf("Error doing roundtrip for %+v: %v\n%v\nCURL to replicate:\n%v", req, resp, err, curly)
+		log.Printf("Error doing roundtrip for %+v: %v\n%v\nCURL to replicate:\n%v", req, resp, err, curly)
 		return nil, err
 	}
 	if resp.StatusCode >= 500 {
-		t.T.Context.Warningf("5xx doing roundtrip for %+v: %v\nCURL to replicate:\n%v", req, resp, curly)
+		log.Printf("5xx doing roundtrip for %+v: %v\nCURL to replicate:\n%v", req, resp, curly)
 	} else if time.Since(start) > (time.Second * 2) {
-		t.T.Context.Warningf("Slow response doing roundtrip for %+v: %v\nCURL to replicate:\n%v", req, resp, curly)
+		log.Printf("Slow response doing roundtrip for %+v: %v\nCURL to replicate:\n%v", req, resp, curly)
 	}
 	return resp, err
 }
@@ -271,15 +273,16 @@ func (self *DefaultContext) Client() *http.Client {
 		Header: http.Header{},
 	}
 	trans.T.Context = self
-	if self.clientTimeout == 0 {
-		trans.T.Deadline = time.Second * 30
-	} else {
-		trans.T.Deadline = self.clientTimeout
-	}
 
-	return &http.Client{
+	res := &http.Client{
 		Transport: trans,
 	}
+	if self.clientTimeout == 0 {
+		res.Timeout = time.Second * 30
+	} else {
+		res.Timeout = self.clientTimeout
+	}
+	return res
 }
 
 func (self *DefaultContext) InTransaction() bool {
@@ -304,7 +307,7 @@ func (self *DefaultContext) Transaction(f interface{}, crossGroup bool) (err err
 	tries := 0
 	for time.Since(start) < (time.Second * 20) {
 		hasConcErr := false
-		err = datastore.RunInTransaction(self, func(c appengine.Context) error {
+		err = datastore.RunInTransaction(self, func(c context.Context) error {
 			newContext = *self
 			newContext.Context = c
 			newContext.inTransaction = true
@@ -400,27 +403,25 @@ func (self *DefaultJSONContext) Transaction(f interface{}, crossGroup bool) erro
 	}, crossGroup)
 }
 
-func NewContext(gaeCont appengine.Context) (result *DefaultContext) {
+func NewContext(gaeCont context.Context) (result *DefaultContext) {
 	return &DefaultContext{
 		Context: gaeCont,
 	}
 }
 
-func NewHTTPContext(gaeCont appengine.Context, httpCont httpcontext.HTTPContextLogger) (result *DefaultHTTPContext) {
+func NewHTTPContext(gaeCont context.Context, httpCont httpcontext.HTTPContext) (result *DefaultHTTPContext) {
 	result = &DefaultHTTPContext{
 		GAEContext:  NewContext(gaeCont),
 		HTTPContext: httpCont,
 	}
-	result.SetLogger(gaeCont)
 	return
 }
 
-func NewJSONContext(gaeCont appengine.Context, jsonCont jsoncontext.JSONContextLogger) (result *DefaultJSONContext) {
+func NewJSONContext(gaeCont context.Context, jsonCont jsoncontext.JSONContext) (result *DefaultJSONContext) {
 	result = &DefaultJSONContext{
 		GAEContext:  NewContext(gaeCont),
 		JSONContext: jsonCont,
 	}
-	result.SetLogger(gaeCont)
 	return
 }
 

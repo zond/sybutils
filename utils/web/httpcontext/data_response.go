@@ -26,7 +26,7 @@ type DataResp struct {
 	Filters     map[string][]string
 }
 
-func (self DataResp) Render(c HTTPContextLogger) error {
+func (self DataResp) Render(c HTTPContext) error {
 	if self.Data == nil {
 		return nil
 	}
@@ -116,7 +116,7 @@ func (self DataResp) Render(c HTTPContextLogger) error {
 
 var suffixPattern = regexp.MustCompile("\\.(\\w{1,6})$")
 
-func DataHandle(c HTTPContextLogger, f func() (*DataResp, error), scopes ...string) {
+func DataHandle(c HTTPContext, f func() (*DataResp, error), scopes ...string) {
 	Handle(c, func() (err error) {
 		resp, err := f()
 		if err != nil {
@@ -144,7 +144,7 @@ func DataHandle(c HTTPContextLogger, f func() (*DataResp, error), scopes ...stri
 	}, scopes...)
 }
 
-func DataHandlerFunc(f func(c HTTPContextLogger) (result *DataResp, err error), scopes ...string) http.Handler {
+func DataHandlerFunc(f func(c HTTPContext) (result *DataResp, err error), scopes ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c := NewHTTPContext(w, r)
 		DataHandle(c, func() (*DataResp, error) {

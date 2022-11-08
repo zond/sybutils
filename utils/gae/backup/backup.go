@@ -1,11 +1,11 @@
 package backup
 
 import (
+	"context"
 	"time"
 
 	"github.com/zond/sybutils/utils/gae"
 
-	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 )
 
@@ -26,7 +26,7 @@ type Backup struct {
 
 type Backups []*Backup
 
-func GetBackups(c appengine.Context) (result Backups, err error) {
+func GetBackups(c context.Context) (result Backups, err error) {
 	ids, err := datastore.NewQuery(AEBackupInformationKind).GetAll(c, &result)
 	err = gae.FilterOkErrors(err)
 	if err != nil {

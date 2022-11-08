@@ -368,8 +368,8 @@ func Remember(doc DocumentedRoute) {
 /*
 CreateResponseFunc will take a function type and value, and return a handler function
 */
-func CreateResponseFunc(fType reflect.Type, fVal reflect.Value) func(c JSONContextLogger) (response Resp, err error) {
-	return func(c JSONContextLogger) (response Resp, err error) {
+func CreateResponseFunc(fType reflect.Type, fVal reflect.Value) func(c JSONContext) (response Resp, err error) {
+	return func(c JSONContext) (response Resp, err error) {
 		// create the arguments, first of which is the context
 		args := make([]reflect.Value, fType.NumIn())
 		args[0] = reflect.ValueOf(c)
@@ -417,19 +417,19 @@ var fNameReg = regexp.MustCompile("^(.*)\\.([^.]+)$")
 /*
 Document will take a func, a path, a set of methods (separated by |) and a set of scopes that will be used when updating models in the func, and return a documented route and a function suitable for HandlerFunc.
 
-The input func must match func(context JSONContextLogger) (status int, err error)
+The input func must match func(context JSONContext) (status int, err error)
 
 One extra input argument after context is allowed, and will be JSON decoded from the request body, and used in the documentation struct.
 
 One extra return value between status and error is allowed, and will be JSON encoded to the response body, and used in the documentation struct.
 */
-func Document(fIn interface{}, path string, methods string, minAPIVersion, maxAPIVersion int, scopes ...string) (docRoute *DefaultDocumentedRoute, fOut func(JSONContextLogger) (Resp, error)) {
+func Document(fIn interface{}, path string, methods string, minAPIVersion, maxAPIVersion int, scopes ...string) (docRoute *DefaultDocumentedRoute, fOut func(JSONContext) (Resp, error)) {
 	// first validate that the handler takes either a context, or a context and a decoded JSON body as argument
 	if errs := utils.ValidateFuncInputs(fIn, []reflect.Type{
-		reflect.TypeOf((*JSONContextLogger)(nil)).Elem(),
+		reflect.TypeOf((*JSONContext)(nil)).Elem(),
 		reflect.TypeOf((*interface{})(nil)).Elem(),
 	}, []reflect.Type{
-		reflect.TypeOf((*JSONContextLogger)(nil)).Elem(),
+		reflect.TypeOf((*JSONContext)(nil)).Elem(),
 	}); len(errs) == 2 {
 		panic(fmt.Errorf("%v does not conform. Fix one of %+v", runtime.FuncForPC(reflect.ValueOf(fIn).Pointer()).Name(), errs))
 	}
@@ -483,7 +483,7 @@ using the provided template, providing it template functions to render separate 
 and examples of types.
 */
 func DocHandler(templ *template.Template) http.Handler {
-	return httpcontext.HandlerFunc(func(c httpcontext.HTTPContextLogger) (err error) {
+	return httpcontext.HandlerFunc(func(c httpcontext.HTTPContext) (err error) {
 		c.Resp().Header().Set("Content-Type", "text/html; charset=UTF-8")
 		// we define a func to render a type
 		// it basically just executes the "TypeTemplate" with the provided

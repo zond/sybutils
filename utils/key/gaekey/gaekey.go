@@ -1,9 +1,10 @@
 package gaekey
 
 import (
+	"context"
+
 	"github.com/zond/sybutils/utils/key"
 
-	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 )
 
@@ -34,7 +35,7 @@ func FromGAE(k *datastore.Key) (result key.Key, err error) {
 	return key.New(k.Kind(), k.StringID(), k.IntID(), parent)
 }
 
-func ToGAE(c appengine.Context, k key.Key) *datastore.Key {
+func ToGAE(c context.Context, k key.Key) *datastore.Key {
 	if len(k) < 1 {
 		return nil
 	}

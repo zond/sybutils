@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -51,22 +52,17 @@ type JSONContext interface {
 	MarshalJSON(subContext interface{}, body interface{}, reason interface{}) ([]byte, error)
 }
 
-type JSONContextLogger interface {
-	JSONContext
-	httpcontext.Logger
-}
-
 type DefaultJSONContext struct {
-	httpcontext.HTTPContextLogger
+	httpcontext.HTTPContext
 	apiVersion      int
 	decodedBody     []byte
 	marshalSyncLock *utils.SyncLock
 }
 
-func NewJSONContext(c httpcontext.HTTPContextLogger) (result *DefaultJSONContext) {
+func NewJSONContext(c httpcontext.HTTPContext) (result *DefaultJSONContext) {
 	result = &DefaultJSONContext{
-		HTTPContextLogger: c,
-		marshalSyncLock:   &utils.SyncLock{},
+		HTTPContext:     c,
+		marshalSyncLock: &utils.SyncLock{},
 	}
 	if result.Req() != nil {
 		if header := result.Req().Header.Get(APIVersionHeader); header != "" {
@@ -130,7 +126,7 @@ func (self *DefaultJSONContext) MarshalJSON(c interface{}, body interface{}, arg
 	var runRecursive func(reflect.Value, reflect.Value) error
 
 	cVal := reflect.ValueOf(c)
-	contextType := reflect.TypeOf((*JSONContextLogger)(nil)).Elem()
+	contextType := reflect.TypeOf((*JSONContext)(nil)).Elem()
 	// initialize an empty container stack
 	stackType := reflect.TypeOf([]interface{}{})
 
@@ -144,10 +140,10 @@ func (self *DefaultJSONContext) MarshalJSON(c interface{}, body interface{}, arg
 		if fun.IsValid() {
 			// make sure we don't run BeforeMarshal on any other things at the same time, at least in this context.
 			return self.marshalSyncLock.Sync(val.Interface(), func() (err error) {
-				// Validate BeforeMarshal takes something that implements JSONContextLogger
+				// Validate BeforeMarshal takes something that implements JSONContext
 				if err = utils.ValidateFuncInput(fun.Interface(), []reflect.Type{contextType, stackType}); err != nil {
 					if err = utils.ValidateFuncInput(fun.Interface(), []reflect.Type{contextType, stackType, reflect.TypeOf(arg)}); err != nil {
-						return fmt.Errorf("BeforeMarshal needs to take an JSONContextLogger")
+						return fmt.Errorf("BeforeMarshal needs to take an JSONContext")
 					}
 				}
 
@@ -166,7 +162,7 @@ func (self *DefaultJSONContext) MarshalJSON(c interface{}, body interface{}, arg
 				res := fun.Call(args)
 
 				if time.Now().Sub(timer) > (500 * time.Millisecond) {
-					self.Infof("BeforeMarshal for %s is slow, took: %v", val.Type(), time.Now().Sub(timer))
+					log.Printf("BeforeMarshal for %s is slow, took: %v", val.Type(), time.Now().Sub(timer))
 				}
 
 				if !res[0].IsNil() {
@@ -224,7 +220,7 @@ func (self *DefaultJSONContext) MarshalJSON(c interface{}, body interface{}, arg
 	return
 }
 
-func respond(c JSONContextLogger, status int, body interface{}) (err error) {
+func respond(c JSONContext, status int, body interface{}) (err error) {
 	if body != nil {
 		c.Resp().Header().Set("Content-Type", "application/json; charset=UTF-8")
 	}
@@ -247,8 +243,8 @@ func respond(c JSONContextLogger, status int, body interface{}) (err error) {
 	return nil
 }
 
-func (self Resp) Respond(c httpcontext.HTTPContextLogger) (err error) {
-	return respond(c.(JSONContextLogger), self.Status, self.Body)
+func (self Resp) Respond(c httpcontext.HTTPContext) (err error) {
+	return respond(c.(JSONContext), self.Status, self.Body)
 }
 
 type JSONError struct {
@@ -259,8 +255,8 @@ func (self JSONError) GetStatus() int {
 	return self.Status
 }
 
-func (self JSONError) Respond(c httpcontext.HTTPContextLogger) (err error) {
-	return respond(c.(JSONContextLogger), self.Status, self.Body)
+func (self JSONError) Respond(c httpcontext.HTTPContext) (err error) {
+	return respond(c.(JSONContext), self.Status, self.Body)
 }
 
 func NewError(status int, body interface{}, info string, cause error) (result JSONError) {
@@ -319,7 +315,7 @@ func (self ValidationError) Error() string {
 	return fmt.Sprint(self.Fields)
 }
 
-func (self ValidationError) Respond(c httpcontext.HTTPContextLogger) error {
+func (self ValidationError) Respond(c httpcontext.HTTPContext) error {
 	if self.Fields != nil {
 		c.Resp().Header().Set("Content-Type", "application/json; charset=UTF-8")
 	}
@@ -329,7 +325,7 @@ func (self ValidationError) Respond(c httpcontext.HTTPContextLogger) error {
 	return json.NewEncoder(c.Resp()).Encode(self)
 }
 
-func Handle(c JSONContextLogger, f func() (Resp, error), minAPIVersion, maxAPIVersion int, scopes ...string) {
+func Handle(c JSONContext, f func() (Resp, error), minAPIVersion, maxAPIVersion int, scopes ...string) {
 	httpcontext.Handle(c, func() (err error) {
 		if minAPIVersion != 0 && c.APIVersion() < minAPIVersion {
 			err = NewError(417, fmt.Sprintf("X-API-Version header has to request API version greater than %v", minAPIVersion), fmt.Sprintf("Headers: %+v", c.Req().Header), nil)
@@ -347,7 +343,7 @@ func Handle(c JSONContextLogger, f func() (Resp, error), minAPIVersion, maxAPIVe
 	}, scopes...)
 }
 
-func HandlerFunc(f func(c JSONContextLogger) (Resp, error), minAPIVersion, maxAPIVersion int, scopes ...string) http.Handler {
+func HandlerFunc(f func(c JSONContext) (Resp, error), minAPIVersion, maxAPIVersion int, scopes ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c := NewJSONContext(httpcontext.NewHTTPContext(w, r))
 		Handle(c, func() (Resp, error) {
